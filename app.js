@@ -33,12 +33,16 @@ $("#add-train-btn").on("click", function(event) {
   var trainDestination = $("#destination-input")
     .val()
     .trim();
-  var trainTime = moment(
-    $("#start-input")
+  var trainTime = $("#start-input")
       .val()
-      .trim(),
-    "00:00"
-  ).format("X");
+      .trim();
+  // var trainTime = moment(
+  //   $("#start-input")
+  //     .val()
+  //     .trim(),
+  //   "00:00"
+  // ).format("X");
+  console.log(`Train time: ${trainTime}`);
   var trainFrequency = $("#frequency-input")
     .val()
     .trim();
@@ -86,10 +90,23 @@ database.ref().on("child_added", function(childSnapshot) {
   console.log(trainFrequency);
 
   // Prettify the schedule start
-  var trainTimePretty = moment
-    .unix(trainTime)
-    .format("00:00");
+  var trainTimePretty = moment(trainTime, "HH:mm");
+  var currentTime = moment();
 
+  var differenceInTime = moment().diff(moment(trainTimePretty), 'minutes');
+  var tRemainder = differenceInTime % trainFrequency;
+  var tMinutesToTrain = trainFrequency - tRemainder;
+  var nextTrain = currentTime.add(tMinutesToTrain, "minutes");
+  nextTrain = nextTrain.format("h:mm a");
+
+  console.log('--------------');
+  console.log(differenceInTime);
+  console.log(tRemainder);
+  console.log(tMinutesToTrain);
+  console.log(nextTrain);
+  console.log('--------------');
+
+    console.log(`pretty time: ${trainTimePretty}`);
   // Calculate the months worked using hardcore math
   // To calculate the months worked
   var nextArrival = moment().diff(
@@ -107,9 +124,9 @@ database.ref().on("child_added", function(childSnapshot) {
     $("<td>").text(trainName),
     $("<td>").text(trainDestination),
     $("<td>").text(trainFrequency),
-    $("<td>").text(trainTimePretty),
-    $("<td>").text(nextArrival),
-    // $("<td>").text(empBilled)
+    $("<td>").text(nextTrain),
+    $("<td>").text(tMinutesToTrain),
+ 
   );
 
   // Append the new row to the table
@@ -117,7 +134,7 @@ database.ref().on("child_added", function(childSnapshot) {
 });
 
 
-console.log(momemt)
+console.log(moment)
 
 
 // // //Time diiference formulas
@@ -150,3 +167,34 @@ console.log(momemt)
 // // // Next Train
 // var nextTrain = moment().add(tMinutesTillTrain, "minutes");
 // console.log("ARRIVAL TIME: " + moment(nextTrain).format("hh:mm"));
+
+// THE MATH!
+    //subtracts the first train time back a year to ensure it's before current time.
+    var firstTrainConverted = moment(firstTrain, "hh:mm").subtract("1, years");
+    // the time difference between current time and the first train
+    var difference = currentTime.diff(moment(firstTrainConverted), "minutes");
+    var remainder = difference % frequency;
+    var minUntilTrain = frequency - remainder;
+    var nextTrain = moment().add(minUntilTrain, "minutes").format("hh:mm a");
+
+    var newTrain = {
+        name: trainName,
+        destination: destination,
+        trainTime: trainTime,
+        trainfrequency: frequency,
+        min: minUntilTrain,
+        next: nextTrain
+    }
+
+    console.log(newTrain);
+    database.ref().push(newTrain);
+
+    $("#trainNameInput").val("");
+    $("#destinationInput").val("");
+    $("#firstInput").val("");
+    $("#frequencyInput").val("");
+
+    var trainName = childSnapshot.val().name;
+  var trainDestination = childSnapshot.val().destination;
+  var trainTime = childSnapshot.val().start;
+  var trainFrequency = childSnapshot.val().frequency;
